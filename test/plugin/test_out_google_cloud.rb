@@ -428,7 +428,7 @@ class GoogleCloudOutputTest < Test::Unit::TestCase
 
   def create_driver(conf = APPLICATION_DEFAULT_CONFIG, tag = 'test')
     Fluent::Test::BufferedOutputTestDriver.new(
-      Fluent::GoogleCloudOutput, tag).configure(conf, use_v1_config: true)
+      Fluent::GoogleCloudOutput, tag).configure(conf, true)
   end
 
   def test_configure_service_account_application_default
@@ -742,9 +742,8 @@ class GoogleCloudOutputTest < Test::Unit::TestCase
     [Time.at(123_456.789), Time.at(0), Time.now].each do |ts|
       # Test the "native" fluentd timestamp as well as our nanosecond tags.
       d.emit({ 'message' => log_entry(emit_index) }, ts.to_f)
-      # The native timestamp currently only supports second granularity
-      # (fluentd issue #461), so strip nanoseconds from the expected value.
-      expected_ts.push(Time.at(ts.tv_sec))
+
+      expected_ts.push(Time.at(ts))
       emit_index += 1
       d.emit('message' => log_entry(emit_index),
              'timeNanos' => ts.tv_sec * 1_000_000_000 + ts.tv_nsec)
@@ -764,8 +763,10 @@ class GoogleCloudOutputTest < Test::Unit::TestCase
     verify_log_entries(emit_index, COMPUTE_PARAMS) do |entry|
       assert_equal expected_ts[verify_index].tv_sec,
                    entry['timestamp']['seconds'], entry
-      assert_equal expected_ts[verify_index].tv_nsec,
-                   entry['timestamp']['nanos'], entry
+      # Fluentd v0.14 onwards supports nanosecond timestamp values.
+      # Added in 1 ms delta to avoid flaky tests.
+      assert_in_delta expected_ts[verify_index].tv_nsec,
+                      entry['timestamp']['nanos'], 1000, entry
       verify_index += 1
     end
   end
