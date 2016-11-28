@@ -763,9 +763,11 @@ class GoogleCloudOutputTest < Test::Unit::TestCase
       assert_equal expected_ts[verify_index].tv_sec,
                    entry['timestamp']['seconds'], entry
       # Fluentd v0.14 onwards supports nanosecond timestamp values.
-      # Added in 1 ms delta to avoid flaky tests.
+      # Added in 600 ns delta to avoid flaky tests introduced
+      # due to rounding error in Double-precision floating-point numbers.
+      # See https://en.wikipedia.org/wiki/Double-precision_floating-point_format
       assert_in_delta expected_ts[verify_index].tv_nsec,
-                      entry['timestamp']['nanos'], 1000, entry
+                      entry['timestamp']['nanos'], 600, entry
       verify_index += 1
     end
   end
