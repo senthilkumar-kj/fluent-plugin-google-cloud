@@ -397,6 +397,7 @@ module Fluent
     # the tag should be rejected. If 'require_valid_tags' is false, non-string
     # tags are converted to strings, and invalid characters are sanitized;
     # otherwise such tags are rejected.
+    # also convert '~' to '__'
     def sanitize_tag(tag)
       if @require_valid_tags &&
          (!tag.is_a?(String) || tag == '' || convert_to_utf8(tag) != tag)
@@ -404,7 +405,7 @@ module Fluent
       end
       tag = convert_to_utf8(tag.to_s)
       tag = '_' if tag == ''
-      tag
+      tag.gsub('~', '__')
     end
 
     # Compute the monitored resource and common labels shared by a collection of
